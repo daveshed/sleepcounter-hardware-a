@@ -1,0 +1,6 @@
+# third-party packages...
+max7219
+stage>=0.3.0
+
+# project-specific packages...
+sleepcounter-core
