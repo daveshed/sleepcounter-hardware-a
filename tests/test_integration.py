@@ -136,6 +136,6 @@ class IntegrationSleepsCounterWithDisplay(TestBase):
             minute=10)
         with mock_datetime(target=today):
             sleep(APP_UPDATE_WAIT_SEC)
-        show_message_args, _ = self.mock_matrix.show_message.call_args
-        (actual_message,) = show_message_args
-        self.assertIn('Christmas in 2 sleeps', actual_message)
+        show_message_args, _ = self.mock_matrix.show_messages.call_args
+        (actual_messages,) = show_message_args
+        self.assertIn('Christmas in 2 sleeps . . . ', actual_messages)

@@ -23,7 +23,6 @@ class LedMatrixWidget(BaseWidget):
             calendar: Calendar,
             label=None):
         self._display = display
-        self._message = ""
         super().__init__(calendar, label)
 
     def update(self):
@@ -35,17 +34,20 @@ class LedMatrixWidget(BaseWidget):
             self._handle_regular_day()
 
     def _handle_special_day(self):
-        self._message = "It's {}!".format(self._calendar.todays_event.name)
+        to_display = "It's {}!".format(self._calendar.todays_event.name)
         LOGGER.info(
             "Updating with calendar %s. Setting message to <%s>",
-            self._calendar, self._message)
-        self._display.show_message(self._message)
+            self._calendar,
+            to_display,
+        )
+        self._display.show_message([to_display])
 
     def _handle_regular_day(self):
-        self._message = ""
+        to_display = []
         for event in self._calendar.events:
             n_sleeps = self._calendar.sleeps_to_event(event)
             unit = 'sleeps' if n_sleeps > 1 else 'sleep'
-            self._message += "%s in %s %s . . . " % (event.name, n_sleeps, unit)
-        LOGGER.info("Setting message to <%s>", self._message)
-        self._display.show_message(self._message)
+            to_display.append(
+                "{} in {} {} . . . ".format(event.name, n_sleeps, unit))
+        LOGGER.info("Displaying...%s", to_display)
+        self._display.show_messages(to_display)

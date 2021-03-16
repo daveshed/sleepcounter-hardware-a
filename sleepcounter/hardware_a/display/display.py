@@ -29,23 +29,19 @@ class LedMatrix(LedMatrixInterface):
             self, device)
         self.device = device
         self.virtual = viewport(device, width=200, height=100)
-        self._message = None
-        self._worker = _DeviceThreadManager(self._scroll_text_once)
+        self._to_display = []
+        self._worker = _DeviceThreadManager(self._activity)
 
-    def show_message(self, text: str, scroll=False):
+    def show_messages(self, messages: list, scroll=False):
         """
-        Show the message. If the message fits the display, it will be shown
-        static. If it's too long, it will be scrolled across the display.
+        Shows messages from a list. If a message fits the display, it will be
+        shown static. If it's too long, it will be scrolled across the display.
         Scrolling may be forced optionally with the scroll arg.
         """
         self.clear()
-        self._message = _Message(text)
-        if (self._message.length > self.device.width) or scroll:
-            _LOGGER.info("Scrolling message %s...", self._message.text)
-            self._scroll_text()
-        else:
-            _LOGGER.info("Showing static message %s...", self._message.text)
-            self._show_text()
+        self._to_display = [_Message(text, scroll) for text in messages]
+        _LOGGER.info("Showing messages...{}".format(self._to_display))
+        self._worker.start()
 
     def clear(self):
         """
@@ -54,25 +50,34 @@ class LedMatrix(LedMatrixInterface):
         _LOGGER.info("Clearing display %r", self)
         self._worker.stop()
         self.device.clear()
-        self._message = None
+        self._to_display = []
 
-    def _show_text(self, offset=0):
+    def _activity(self):
+        """
+        The display's worker activity that should be executed asynchronously.
+        """
+        for message in self._to_display:
+            if message.is_scrolling(self.device):
+                _LOGGER.info("Scrolling message <%s>...", message.text)
+                self._scroll_text(message)
+            else:
+                _LOGGER.info("Showing static message <%s>...", message.text)
+                self._show_text(message)
+
+    def _show_text(self, message, offset=0):
         _LOGGER.debug(
-            "Showing: <text:%s><offset:%d>", self._message.text, offset)
+            "Showing: <text:%s><offset:%d>", message.text, offset)
         with canvas(self.virtual) as draw:
             draw.text(
                 (offset, VERTICAL_OFFSET),
-                self._message.text,
+                message.text,
                 font=_Message.FONT,
                 fill="white",
             )
 
-    def _scroll_text(self):
-        self._worker.start()
-
-    def _scroll_text_once(self):
-        for offset in range(self._message.length + self.device.width):
-            self._show_text(self.device.width - offset)
+    def _scroll_text(self, message):
+        for offset in range(message.length + self.device.width):
+            self._show_text(message, (self.device.width - offset))
             sleep(1 / SCROLL_RATE)
 
 
@@ -81,11 +86,12 @@ class _Message:
     FONT_SIZE = 9
     FONT = ImageFont.truetype(font=FONT_PATH, size=FONT_SIZE)
 
-    def __init__(self, text: str):
+    def __init__(self, text: str, scroll: bool):
         """
         Builds a message to display on the device from text
         """
         self._text = text.upper()
+        self._scroll = scroll
 
     @property
     def text(self):
@@ -109,6 +115,15 @@ class _Message:
         """
         _, height = self.__class__.FONT.getsize(self.text)
         return height
+
+    def is_scrolling(self, device):
+        return self._scroll or (self.length > device.width)
+
+    def __repr__(self):
+        return "{}(text={})".format(type(self).__name__, self.text)
+
+    def __str__(self):
+        return self.text
 
 
 class _DeviceThreadManager:

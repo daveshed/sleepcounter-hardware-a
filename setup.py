@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='sleepcounter-hardware-a',
-    version='2.2.6',
+    version='2.2.7',
     packages=setuptools.find_namespace_packages(include=["sleepcounter.*"]),
     install_requires=[
         # third-party...

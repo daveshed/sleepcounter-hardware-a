@@ -12,7 +12,7 @@ class LedMatrixInterface(ABC):
     widgtets
     """
     @abstractmethod
-    def show_message(self, text: str, scroll=False):
+    def show_messages(self, text: str, scroll=False):
         """
         Child class should implement a method for showing a message and it
         should scroll
