@@ -40,7 +40,7 @@ class LedMatrixWidget(BaseWidget):
             self._calendar,
             to_display,
         )
-        self._display.show_message([to_display])
+        self._display.show_messages([to_display])
 
     def _handle_regular_day(self):
         to_display = []
